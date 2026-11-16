@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from './Icon';
 
 async function writeClipboard(text: string) {
   if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Permission denied or document not focused: fall through to the legacy path.
+    }
   }
   // Fallback for non-secure contexts / older browsers.
   const ta = document.createElement('textarea');
@@ -17,7 +22,7 @@ async function writeClipboard(text: string) {
   if (!ok) throw new Error('copy failed');
 }
 
-export function CopyButton({ text }: { text: string }) {
+export function CopyButton({ text, label = 'IP address' }: { text: string; label?: string }) {
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const timer = useRef<number>();
 
@@ -38,14 +43,15 @@ export function CopyButton({ text }: { text: string }) {
     <>
       <button
         type="button"
-        className="btn btn-secondary"
+        className={`btn btn-secondary btn-sm${state === 'copied' ? ' btn-copied' : state === 'failed' ? ' btn-failed' : ''}`}
         onClick={onClick}
-        aria-label="Copy IP address to clipboard"
+        aria-label={`Copy ${label} to clipboard`}
       >
-        {state === 'copied' ? '✓ Copied' : 'Copy'}
+        <Icon name={state === 'copied' ? 'check' : 'copy'} />
+        {state === 'copied' ? 'Copied' : state === 'failed' ? 'Failed' : 'Copy'}
       </button>
       <span className="sr-only" role="status" aria-live="polite">
-        {state === 'copied' ? 'IP address copied to clipboard' : state === 'failed' ? 'Copy failed' : ''}
+        {state === 'copied' ? `${label} copied to clipboard` : state === 'failed' ? 'Copy failed' : ''}
       </span>
       {state === 'failed' && (
         <span className="copy-error">Copy failed — select the text manually.</span>
