@@ -4,7 +4,8 @@ export interface IpifyResponse {
 
 export class IpLookupError extends Error {}
 
-const IPIFY_URL = 'https://api.ipify.org?format=json';
+export const IPV4_URL = 'https://api.ipify.org?format=json';
+export const IPV6_URL = 'https://api6.ipify.org?format=json';
 const TIMEOUT_MS = 10_000;
 
 // Loose sanity check: IPv4 or IPv6 characters only.
@@ -18,13 +19,16 @@ export function parseIpResponse(data: unknown): string {
   return ip.trim();
 }
 
-export async function fetchPublicIp(fetchFn: typeof fetch = fetch): Promise<string> {
+export async function fetchPublicIp(
+  fetchFn: typeof fetch = fetch,
+  url: string = IPV4_URL,
+): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
     let res: Response;
     try {
-      res = await fetchFn(IPIFY_URL, { signal: controller.signal, cache: 'no-store' });
+      res = await fetchFn(url, { signal: controller.signal, cache: 'no-store' });
     } catch {
       throw new IpLookupError(
         'Could not reach the IP lookup service. Check your connection and try again.',
